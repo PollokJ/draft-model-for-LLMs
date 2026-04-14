@@ -3,10 +3,10 @@ from transformers import AutoTokenizer, GPT2LMHeadModel, TrainingArguments, Trai
 import torch;
 
 dataset_raw = load_dataset("glue", "sst2")
-tokenizer = AutoTokenizer.from_pretrained("gpt2")
+tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
+model = GPT2LMHeadModel.from_pretrained("distilgpt2")
 tokenizer.pad_token = tokenizer.eos_token
-model = GPT2LMHeadModel.from_pretrained("gpt2")
-print(model.device)
+model.generation_config.pad_token_id = tokenizer.pad_token_id
 
 data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer,
@@ -26,8 +26,10 @@ dataset_mapped = dataset_raw.map(tokenize, batched=False)
 args = TrainingArguments(
     output_dir="./out",
     eval_strategy="epoch",
-    per_device_train_batch_size=4,
-    num_train_epochs=2
+    per_device_train_batch_size=16,
+    gradient_accumulation_steps=1,
+    num_train_epochs=2,
+    fp16=True,
 )
 
 trainer = Trainer(
@@ -63,6 +65,6 @@ def eval_acc(model, tokenizer, dataset, n=200):
 
     return correct / n
 
-print("Before:", eval_acc(model, tokenizer, dataset_raw["validation"]))
-trainer.train();
-print("After:", eval_acc(model, tokenizer, dataset_raw["validation"]))
+# print("Before:", eval_acc(model, tokenizer, dataset_raw["validation"]))
+trainer.train()
+# print("After:", eval_acc(model, tokenizer, dataset_raw["validation"]))
