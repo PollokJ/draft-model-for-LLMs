@@ -1,6 +1,7 @@
 import torch
 import time
 from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
+from transformers.generation.candidate_generator import AssistedCandidateGenerator
 
 model = "Qwen/Qwen3-32B"
 draft_model_name  = "Qwen/Qwen3-8B"
@@ -31,9 +32,8 @@ start = time.time()
 
 out = og_model.generate(
     **inputs,
-    max_new_tokens=500,
-    min_new_tokens=500,
-    do_sample=True,
+    max_new_tokens=300,
+    do_sample=False,
     temperature=0.7,
     use_cache=True
 )
@@ -54,12 +54,11 @@ start = time.time()
 out = og_model.generate(
     **inputs,
     assistant_model=specdec_model,
-    max_new_tokens=500,
-    min_new_tokens=500,
-    do_sample=True,
+    max_new_tokens=300,
+    do_sample=False,
     temperature=0.7,
     use_cache=True,
-    num_assistant_tokens = 4
+    num_assistant_tokens = 8
     # assistant_tokenizer=tokenizer Same for both models rn so this line is not really needed
 )
 
