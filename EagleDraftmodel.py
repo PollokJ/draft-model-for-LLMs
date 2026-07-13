@@ -1,8 +1,8 @@
 from vllm import LLM, SamplingParams
 
-# VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0 python vllm_DraftModel.py
-# Simply running the 32B model with the 0.6B or 8B Draftmodels without any training stays within +/- 10% of the original performance.
-# Noteworthy that this is a standard draft model and not eagle3 algo
+# VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0 python EagleDraftmodel.py
+# Roughly speed of around 64t/s. Rough speedup of *1.5 compared to baseline at 3 predicted tokens. At 5 it does not improve significantly. stays with +/- ten percent
+# Memory at roughly 4*21589MiB
 
 prompts = [
     "What color is the sky?",
@@ -22,17 +22,6 @@ prompts = [
     "The future of artificial intelligence will",
 ]
 
-#{
-#  "model": "Qwen/Qwen3-32B",
-#  "messages": [
-#    {
-#      "role": "user",
-#      "content": "Tell me a joke about animals."
-#    }
-#  ],
-#  "temperature": 0.8,
-#  "max_tokens": 300
-#}
 
 sampling_params = SamplingParams(temperature=0.8, top_p=0.95, max_tokens=200, min_tokens=50)
 
@@ -44,11 +33,13 @@ llm = LLM(
     gpu_memory_utilization=0.9,
     enforce_eager=True,
     speculative_config={
-        "model": "Qwen/Qwen3-0.6B",
-        "num_speculative_tokens": 3,        
-        "method": "draft_model",
+        "model": "RedHatAI/Qwen3-32B-speculator.eagle3",
+        "num_speculative_tokens": 5,        
+        "method": "eagle3",
     }
 )
+
+# Note: "RedHatAI/Qwen3-32B-speculator.eagle3" ist 2B oder kleiner. 32B heißt nur das es für das Qwen3-32B model gemacht ist
 
 outputs = llm.generate(prompts, sampling_params)
 

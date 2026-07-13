@@ -32,7 +32,7 @@ start = time.time()
 
 out = og_model.generate(
     **inputs,
-    max_new_tokens=300,
+    max_new_tokens=30,
     do_sample=False,
     temperature=0.7,
     use_cache=True
@@ -54,7 +54,7 @@ start = time.time()
 out = og_model.generate(
     **inputs,
     assistant_model=specdec_model,
-    max_new_tokens=300,
+    max_new_tokens=30,
     do_sample=False,
     temperature=0.7,
     use_cache=True,
