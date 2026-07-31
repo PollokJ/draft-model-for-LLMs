@@ -1,0 +1,92 @@
+# Configuration for train_entry.py with vLLM Engine inference (nested config format)
+#
+# GPU allocation:
+#   - 2 GPUs for inference (2 inference GPUs total, TP=1 per engine)
+#   - 2 GPUs for training (DP/FSDP across 2 GPUs)
+#   - Total: 4 GPUs
+#
+# Installation:
+#   pip install -e ".[vllm]"  # Install vLLM backend
+#
+# Usage:
+#   python -m torchspec.train_entry --config configs/vllm_qwen3_5_35b.yaml
+#
+# Note: Uses vLLM's extract_hidden_states speculative method with MooncakeHiddenStatesConnector.
+
+model:
+  target_model_path: Qwen/Qwen3.5-35B-A3B
+  embedding_key: model.language_model.embed_tokens.weight
+  lm_head_key: lm_head.weight
+  norm_key: model.language_model.norm.weight
+  trust_remote_code: true
+
+dataset:
+  train_data_path: "/home/jpollok/training/am_90k.jsonl"
+  eval_data_path: "/home/jpollok/training/50eval.jsonl"
+  eval_interval: 200
+  chat_template: qwen
+  prompt_key: messages
+  defer_tokenization: false
+
+logging:
+  report_to: wandb
+  use_wandb: true
+  wandb_project: "35B-Training-3Tokens"
+  wandb_mode: online
+
+training:
+  attention_backend: fa4
+  micro_batch_size: 1
+  draft_accumulation_steps: 1
+  learning_rate: 3e-4
+  num_train_steps: 5000
+  max_concurrent_batches: 1
+  max_grad_norm: 2.0
+  max_seq_length: 18000
+  num_epochs: 3
+  seed: 42
+  training_num_gpus_per_node: 2
+  training_num_nodes: 1
+  ttt_length: 3
+  save_per_epoch: true
+  warmup_ratio: 0.015
+  save_interval: 1000
+  fsdp_strategy: FULL_SHARD
+  fsdp_reduce_dtype: bfloat16
+
+inference:
+  inference_engine_type: vllm
+  inference_num_gpus: 2
+  inference_num_gpus_per_engine: 2
+  inference_num_gpus_per_node: 4
+  max_sample_pool_size: 32
+  inference_buffer_threshold: 32
+  inference_batch_size: 2
+  aux_hidden_states_layers: [3, 19, 35]
+  vllm:
+    tp_size: 2
+    mem_fraction_static: 0.95
+    extra_args:
+      language_model_only: true
+      max_num_batched_tokens: 512
+      max_num_seqs: 2
+      max_model_len: 18000
+      enable_chunked_prefill: true
+      enforce_eager: true
+      cpu_offload_gb: 12
+
+mooncake:
+  protocol: tcp
+  global_segment_size: 1GB
+  local_buffer_size: 256MB
+  master_server_address: null
+  metadata_server: null
+
+output_dir: ./outputs/qwen3_5-35b-single-node
+cache_dir: /home/jpollok/.cache/qwen3_5-35b-single-node
+model_download_dir: null
+
+debug:
+  save_debug_train_data: null
+  debug_train_only: false
+  debug_inference_only: false
