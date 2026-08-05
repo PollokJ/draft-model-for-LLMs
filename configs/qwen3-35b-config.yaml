@@ -1,28 +1,16 @@
-# Configuration for train_entry.py with vLLM Engine inference (nested config format)
-#
-# GPU allocation:
-#   - 2 GPUs for inference (2 inference GPUs total, TP=1 per engine)
-#   - 2 GPUs for training (DP/FSDP across 2 GPUs)
-#   - Total: 4 GPUs
-#
-# Installation:
-#   pip install -e ".[vllm]"  # Install vLLM backend
-#
-# Usage:
-#   python -m torchspec.train_entry --config configs/vllm_qwen3_5_35b.yaml
-#
-# Note: Uses vLLM's extract_hidden_states speculative method with MooncakeHiddenStatesConnector.
-
 model:
-  target_model_path: Qwen/Qwen3.5-35B-A3B
+  target_model_path: Qwen/Qwen2.5-32B
   embedding_key: model.language_model.embed_tokens.weight
   lm_head_key: lm_head.weight
   norm_key: model.language_model.norm.weight
   trust_remote_code: true
+  draft_model_config: "/home/jpollok/draft-model-for-LLMs/configs/draft_config.json"
+
+
 
 dataset:
-  train_data_path: "/home/jpollok/training/am_90k.jsonl"
-  eval_data_path: "/home/jpollok/training/50eval.jsonl"
+  train_data_path: "/home/jpollok/.cache/random_5k_samples_0.9m.jsonl"
+  eval_data_path: "/home/jpollok/.cache/random_50_samples_0.5m.jsonl"
   eval_interval: 200
   chat_template: qwen
   prompt_key: messages
@@ -31,21 +19,21 @@ dataset:
 logging:
   report_to: wandb
   use_wandb: true
-  wandb_project: "35B-Training-3Tokens"
+  wandb_project: "27B-Training-3Tokens"
   wandb_mode: online
 
 training:
   attention_backend: fa4
-  micro_batch_size: 1
+  micro_batch_size: 2
   draft_accumulation_steps: 1
   learning_rate: 3e-4
-  num_train_steps: 5000
-  max_concurrent_batches: 1
+  num_train_steps: 10000
+  max_concurrent_batches: 2
   max_grad_norm: 2.0
-  max_seq_length: 18000
+  max_seq_length: 32000
   num_epochs: 3
   seed: 42
-  training_num_gpus_per_node: 2
+  training_num_gpus_per_node: 8
   training_num_nodes: 1
   ttt_length: 3
   save_per_epoch: true
@@ -56,16 +44,16 @@ training:
 
 inference:
   inference_engine_type: vllm
-  inference_num_gpus: 2
-  inference_num_gpus_per_engine: 2
-  inference_num_gpus_per_node: 4
+  inference_num_gpus: 8
+  inference_num_gpus_per_engine: 8
+  inference_num_gpus_per_node: 8
   max_sample_pool_size: 32
   inference_buffer_threshold: 32
   inference_batch_size: 2
   aux_hidden_states_layers: [3, 19, 35]
   vllm:
-    tp_size: 2
-    mem_fraction_static: 0.95
+    tp_size: 8
+    mem_fraction_static: 0.8
     extra_args:
       language_model_only: true
       max_num_batched_tokens: 512
@@ -76,17 +64,15 @@ inference:
       cpu_offload_gb: 12
 
 mooncake:
+  enable: false
   protocol: tcp
-  global_segment_size: 1GB
-  local_buffer_size: 256MB
-  master_server_address: null
-  metadata_server: null
+  master_server_address: "134.2.17.206:51783"
+  metadata_server: "http://134.2.17.206:8580"
+  global_segment_size: 8GB
+  local_buffer_size: 1GB
 
-output_dir: ./outputs/qwen3_5-35b-single-node
-cache_dir: /home/jpollok/.cache/qwen3_5-35b-single-node
+
+output_dir: /home/jpollok/.cache/outputs/qwen3_5-27b-single-node
+cache_dir: /home/jpollok/.cache/qwen3_5-27b-single-node
 model_download_dir: null
 
-debug:
-  save_debug_train_data: null
-  debug_train_only: false
-  debug_inference_only: false

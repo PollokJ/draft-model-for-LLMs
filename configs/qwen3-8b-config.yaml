@@ -37,7 +37,7 @@ training:
   micro_batch_size: 1
   draft_accumulation_steps: 1
   learning_rate: 3e-4
-  num_train_steps: 5000
+  num_train_steps: 10
   max_concurrent_batches: 1
   max_grad_norm: 0.5
   max_seq_length: 25000
@@ -77,8 +77,3 @@ mooncake:
 output_dir: ./outputs/qwen3-8b-SpeedTest
 cache_dir: /home/jpollok/.cache
 model_download_dir: null
-
-debug:
-  save_debug_train_data: null
-  debug_train_only: false
-  debug_inference_only: false
