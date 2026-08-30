@@ -143,8 +143,10 @@ def generate_eval_cache(
 def run_eval(step: int, train_group, eval_enabled: bool) -> dict:
     """Run forward-only eval from cache. Assumes eval cache is already populated."""
     if not eval_enabled:
+        print("--> DEBUG: eval skipped because eval_enabled is False", flush=True)
         return {}
-
+    
+    print("Starting EVAL")
     t0 = time.perf_counter()
     eval_results = train_group.run_eval()
     eval_latency = time.perf_counter() - t0
@@ -156,12 +158,19 @@ def run_eval(step: int, train_group, eval_enabled: bool) -> dict:
         num_samples = eval_metrics.get("eval/num_samples", 50)
         gamma = getattr(train_group, "gamma", 5)
 
-        total_tokens = (sim_acc_len / gamma) * seq_len * num_samples
-        spec_tps = total_tokens / eval_latency if eval_latency > 0 else 0.0
+        # Rough estimate of accepted draft tokens, depending on the avg length of accepted tokens
+        draft_tokens_accepted = (sim_acc_len / gamma) * seq_len * num_samples
+        draft_tps = draft_tokens_accepted / eval_latency if eval_latency > 0 else 0.0
+
+        # Rough estimate of total token output
+        total_tokens = seq_len * num_samples
+        total_tps = total_tokens / eval_latency if eval_latency > 0 else 0.0
 
         eval_metrics["eval/step"] = step
         eval_metrics["eval/loss_pass_sec"] = eval_latency
-        eval_metrics["eval/spec_tokens_per_sec"] = spec_tps
+        eval_metrics["eval/draft_tokens_per_sec"] = draft_tps
+        eval_metrics["eval/total_tokens_per_sec"] = total_tps
+        eval_metrics["eval/eval_time"] = eval_latency
 
         if wandb.run is not None:
             wandb.log(eval_metrics)
@@ -170,7 +179,8 @@ def run_eval(step: int, train_group, eval_enabled: bool) -> dict:
             f"loss={eval_metrics.get('eval/avg_loss', 0):.4f}, "
             f"acc={eval_metrics.get('eval/avg_acc', 0):.4f}, "
             f"sim_acc_len={sim_acc_len:.2f}, "
-            f"spec_tps={spec_tps:.2f} tok/s"
+            f"draft_tps={draft_tps:.2f} tok/s, "
+            f"total_tps={total_tps:.2f} tps"
         )
 
     return eval_metrics
@@ -197,8 +207,13 @@ def setup_eval(controller, train_group, args, eval_dataset_size: int) -> EvalSet
 
     if eval_enabled:
         cache_dir = os.path.abspath(getattr(args, "cache_dir", "./cache"))
+        data_source = (
+            getattr(args, "offline_data_path", "")
+            if getattr(args, "inference_engine_type", None) == "offline"
+            else getattr(args, "eval_data_path", "")
+        )
         cache_key = hashlib.md5(
-            f"{getattr(args, 'eval_data_path', '')}|"
+            f"{data_source}|"
             f"{getattr(args, 'target_model_path', '')}|"
             f"{getattr(args, 'max_seq_length', 0)}".encode()
         ).hexdigest()[:12]
