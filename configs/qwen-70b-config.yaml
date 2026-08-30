@@ -1,0 +1,86 @@
+model:
+  target_model_path: Qwen/Qwen3-32B
+  embedding_key: model.embed_tokens.weight
+  lm_head_key: lm_head.weight
+  norm_key: model.norm.weight
+  trust_remote_code: true
+  draft_model_config: "/home/jpollok/draft-model-for-LLMs/configs/draft_config.json"  
+
+dataset:
+  train_data_path: "/home/jpollok/.cache/random_30k.jsonl"
+  eval_data_path: "/home/jpollok/.cache/eval_data.jsonl"
+  eval_interval: 200
+  chat_template: qwen
+  prompt_key: messages
+  length_group_size: 256
+  eval_micro_batch_size: 1
+
+logging:
+  report_to: wandb
+  use_wandb: true
+  wandb_project: "32Qwen-Training-3-Tokens"
+  wandb_mode: online
+
+decode:
+  cuda_graph_max_bs: null
+
+training:
+  attention_backend: sdpa
+  micro_batch_size: 1
+  draft_accumulation_steps: 1
+  learning_rate: 1e-3
+  num_train_steps: 7500
+  max_concurrent_batches: 1
+  max_grad_norm: 2.0
+  max_seq_length: 7200
+  num_epochs: 5000
+  seed: 42
+  training_num_gpus_per_node: 8
+  training_num_nodes: 1
+  ttt_length: 3
+  save_per_epoch: true
+  warmup_ratio: 0.015
+  save_interval: 1500
+  fsdp_strategy: FULL_SHARD
+  fsdp_reduce_dtype: bfloat16
+  gradient_checkpointing: true
+  prefetch_depth: 1
+  sp_ring_size: 1
+  sp_ulysses_size: 1
+
+inference:
+  inference_engine_type: offline
+  offline:
+    num_engines: 1
+    data_path: "/home/jpollok/.cache/torchspec_offline_data"
+  inference_num_gpus: 0
+  inference_num_gpus_per_engine: 0
+  inference_num_gpus_per_node: 0
+  max_sample_pool_size: 64
+  inference_buffer_threshold: 8
+  inference_batch_size: 8
+  aux_hidden_states_layers: [3, 19, 35]
+  vllm:
+    tp_size: 8
+    mem_fraction_static: 0.85
+    extra_args:
+      max_num_batched_tokens: 20000
+      max_num_seqs: 1
+      max_model_len: 20000
+      enable_chunked_prefill: true
+      enforce_eager: true
+
+mooncake:
+  enable: true
+  protocol: tcp
+  master_server_address: null
+  metadata_server: null
+  global_segment_size: 128GB
+  local_buffer_size: 64GB
+
+
+output_dir: /home/jpollok/.cache/outputs/qwen32b-3Tokens
+cache_dir: /home/jpollok/.cache/qwen32b-3Tokens-Cache
+model_download_dir: null
+
+   
