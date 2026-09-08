@@ -1,0 +1,64 @@
+model:
+  target_model_path: meta-llama/Llama-3.1-8B-Instruct
+  trust_remote_code: true
+
+logging:
+  report_to: wandb
+  use_wandb: true
+  wandb_project: "LLama-8B-EAGLE3-3-Tokens"
+  wandb_mode: online
+
+dataset:
+  train_data_path: "/home/jpollok/.cache/ultrachat_10k_filtered_filtered_2300.jsonl"
+  eval_data_path: "/home/jpollok/.cache/eval_data_filtered_2300.jsonl"
+  eval_interval: 200
+  prompt_key: messages
+  chat_template: llama3
+
+training:
+  attention_backend: sdpa
+  fsdp_reduce_dtype: bfloat16
+  fsdp_strategy: FULL_SHARD
+  micro_batch_size: 1
+  gradient_checkpointing: true
+  draft_accumulation_steps: 1
+  learning_rate: 1e-4
+  num_train_steps: 4000
+  max_concurrent_batches: 1
+  max_grad_norm: 0.5
+  max_seq_length: 2500
+  num_epochs: 10000
+  seed: 42
+  training_num_gpus_per_node: 6
+  training_num_nodes: 1
+  ttt_length: 3
+  save_per_epoch: false
+  save_interval: 1000
+  warmup_ratio: 0.015
+
+inference:
+  inference_engine_type: vllm
+  inference_num_gpus: 2
+  inference_num_gpus_per_engine: 2
+  inference_num_gpus_per_node: 2
+  max_sample_pool_size: 128
+  inference_buffer_threshold: 20
+  inference_batch_size: 10
+  vllm:
+    tp_size: 2
+    mem_fraction_static: 0.85
+    extra_args:
+      max_model_len: 2500
+      max_num_batched_tokens: 2500
+      enable_cumem_allocator: true
+
+mooncake:
+  master_server_address: null
+  metadata_server: null
+  protocol: tcp
+  global_segment_size: 32GB
+  local_buffer_size: 4GB
+
+output_dir: ./outputs/llama
+cache_dir: ./cache
+model_download_dir: null
