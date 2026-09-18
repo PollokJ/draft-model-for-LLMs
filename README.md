@@ -58,5 +58,5 @@ Once training and eval data is generated
   ```--config </path/to/config_file.yaml>\```  
   ```training.training_num\_gpus_per\_node=8 \```
 
-#Thesis summary
+# Thesis summary
 This thesis managed to train a draft model for the Qwen3-8B model and the Meta-Llama-3-8B-Instruct model. Both have shown a significant speedup.
